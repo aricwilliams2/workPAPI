@@ -16,9 +16,58 @@ const app = express()
 const PORT = process.env.PORT || 3000
 
 // Middleware
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://aricwilliamst.com',
+  'http://aricwilliamst.com'
+]
+
+const envOriginsRaw = [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [])
+]
+  .map(origin => origin?.trim())
+  .filter(Boolean)
+
+const normalizeOrigin = (origin) => {
+  try {
+    const url = new URL(origin)
+    return `${url.protocol}//${url.host}`
+  } catch {
+    return origin
+  }
+}
+
+const envOrigins = envOriginsRaw.flatMap(origin => {
+  const normalized = normalizeOrigin(origin)
+  return normalized === origin ? [origin] : [origin, normalized]
+})
+
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])]
+
+console.log('🌐 CORS allowed origins:', allowedOrigins.join(', ') || '(none)')
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true)
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return callback(null, true)
+    }
+
+    console.log(`❌ CORS blocked origin: ${origin}`)
+    return callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With']
 }))
 
 // Ensure JSON responses for all API routes
@@ -95,10 +144,10 @@ async function startServer() {
       })
     
     // Start server regardless of database initialization
-    app.listen(PORT, () => {
-      console.log(`🚀 Work Phase API server running on http://localhost:${PORT}`)
-      console.log(`📚 API Documentation available at http://localhost:${PORT}/api/health`)
-      console.log(`🗄️  Database: ${process.env.DB_DATABASE} on ${process.env.DB_HOST}`)
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Work Phase API server running on port ${PORT}`)
+      console.log('📚 API Documentation available at /api/health')
+      console.log(`🗄️  Database: ${process.env.DB_DATABASE || 'not configured'} on ${process.env.DB_HOST || 'not configured'}`)
     })
   } catch (error) {
     console.error('❌ Failed to start server:', error)

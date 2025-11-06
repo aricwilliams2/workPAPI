@@ -35,10 +35,15 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean) // Remove any undefined values
 
+// Log allowed origins on startup (for debugging)
+console.log('🌐 CORS: Allowed origins:', allowedOrigins.join(', '))
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, curl)
-    if (!origin) return callback(null, true)
+    if (!origin) {
+      return callback(null, true)
+    }
     
     // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
@@ -48,6 +53,10 @@ app.use(cors({
       if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
         callback(null, true)
       } else {
+        // Log rejected origins in production for debugging
+        if (process.env.NODE_ENV === 'production') {
+          console.log(`❌ CORS: Rejected origin: ${origin}`)
+        }
         callback(new Error('Not allowed by CORS'))
       }
     }
@@ -227,10 +236,11 @@ async function startServer() {
       })
     
     // Start server regardless of database initialization
-    app.listen(PORT, () => {
-      console.log(`🚀 Work Phase API server running on http://localhost:${PORT}`)
-      console.log(`📚 API Documentation available at http://localhost:${PORT}/api/health`)
-      console.log(`🗄️  Database: ${process.env.DB_DATABASE} on ${process.env.DB_HOST}`)
+    // Listen on all interfaces (0.0.0.0) for Render deployment
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Work Phase API server running on port ${PORT}`)
+      console.log(`📚 API Documentation available at /api/health`)
+      console.log(`🗄️  Database: ${process.env.DB_DATABASE || 'not configured'} on ${process.env.DB_HOST || 'not configured'}`)
     })
   } catch (error) {
     console.error('❌ Failed to start server:', error)

@@ -7,6 +7,9 @@ import { providersRouter } from './routes/providers.js'
 import { notificationsRouter } from './routes/notifications.js'
 import { profileRouter } from './routes/profile.js'
 import { categoriesRouter } from './routes/categories.js'
+import { authRouter } from './routes/auth.js'
+import { messagesRouter } from './routes/messages.js'
+import { uploadRouter } from './routes/upload.js'
 import initializeDatabase from './database/init.js'
 
 // Load environment variables
@@ -87,11 +90,14 @@ app.use((req, res, next) => {
 })
 
 // Routes
+app.use('/api/auth', authRouter)
 app.use('/api/posts', postsRouter)
 app.use('/api/providers', providersRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/profile', profileRouter)
 app.use('/api/categories', categoriesRouter)
+app.use('/api/messages', messagesRouter)
+app.use('/api/upload', uploadRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

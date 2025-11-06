@@ -28,6 +28,10 @@ const PORT = process.env.PORT || 3000
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://aricwilliamst.com',
+  'https://aricwilliamst.com',
+  'http://aricwilliamst.com/workP',
+  'https://aricwilliamst.com/workP',
   process.env.FRONTEND_URL
 ].filter(Boolean) // Remove any undefined values
 

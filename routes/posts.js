@@ -332,7 +332,7 @@ postsRouter.get('/:id', async (req, res) => {
 // DELETE /api/posts/:id - Delete a post
 postsRouter.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Post.delete(parseInt(req.params.id))
+    const deleted = await Post.delete(req.params.id)
     
     if (!deleted) {
       return res.status(404).json({

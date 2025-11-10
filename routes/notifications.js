@@ -1,13 +1,19 @@
 import { Router } from 'express'
 import { Notification } from '../models/Notification.js'
+import { optionalAuth } from '../middleware/auth.js'
 
 export const notificationsRouter = Router()
 
 // GET /api/notifications - Get all notifications with optional filtering
-notificationsRouter.get('/', async (req, res) => {
+notificationsRouter.get('/', optionalAuth, async (req, res) => {
   try {
     const { type, unread, limit, offset } = req.query
     const filters = {}
+    
+    // Filter by authenticated user's notifications
+    if (req.user?.username) {
+      filters.recipientUsername = req.user.username
+    }
     
     if (type) filters.type = type
     if (unread) filters.unread = unread
@@ -35,7 +41,8 @@ notificationsRouter.get('/', async (req, res) => {
 // GET /api/notifications/:id - Get a specific notification
 notificationsRouter.get('/:id', async (req, res) => {
   try {
-    const notification = await Notification.getById(parseInt(req.params.id))
+    // Use ID as string (not parseInt) since notifications use VARCHAR IDs
+    const notification = await Notification.getById(req.params.id)
     
     if (!notification) {
       return res.status(404).json({
@@ -59,7 +66,8 @@ notificationsRouter.get('/:id', async (req, res) => {
 // PUT /api/notifications/:id/read - Mark notification as read
 notificationsRouter.put('/:id/read', async (req, res) => {
   try {
-    const notification = await Notification.markAsRead(parseInt(req.params.id))
+    // Use ID as string (not parseInt) since notifications use VARCHAR IDs
+    const notification = await Notification.markAsRead(req.params.id)
     
     if (!notification) {
       return res.status(404).json({
@@ -81,9 +89,10 @@ notificationsRouter.put('/:id/read', async (req, res) => {
 })
 
 // PUT /api/notifications/read-all - Mark all notifications as read
-notificationsRouter.put('/read-all', async (req, res) => {
+notificationsRouter.put('/read-all', optionalAuth, async (req, res) => {
   try {
-    const count = await Notification.markAllAsRead()
+    const recipientUsername = req.user?.username || null
+    const count = await Notification.markAllAsRead(recipientUsername)
 
     res.json({
       success: true,
@@ -101,7 +110,8 @@ notificationsRouter.put('/read-all', async (req, res) => {
 // DELETE /api/notifications/:id - Delete a notification
 notificationsRouter.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Notification.delete(parseInt(req.params.id))
+    // Use ID as string (not parseInt) since notifications use VARCHAR IDs
+    const deleted = await Notification.delete(req.params.id)
     
     if (!deleted) {
       return res.status(404).json({
